@@ -1,10 +1,8 @@
 extern crate hey_listen;
-extern crate parking_lot;
 
 use hey_listen::{EventDispatcher, Listener, SyncDispatcherRequest};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::ops::Deref;
-use parking_lot::Mutex;
 
 #[derive(Clone, Eq, Hash, PartialEq)]
 enum Event {
@@ -50,7 +48,7 @@ fn dispatch_enum_variant_with_field() {
 
     dispatcher.dispatch_event(&Event::VariantA);
 
-    let enum_field = match *listener.lock().deref() {
+    let enum_field = match *listener.lock().expect("TODO:").deref() {
         EnumListener::SomeVariant(x) => x,
     };
 
@@ -93,14 +91,14 @@ fn register_one_listener_for_two_event_variants_and_dispatch_two_variants() {
     dispatcher.add_listener(Event::VariantB, &listener);
 
     dispatcher.dispatch_event(&Event::VariantA);
-    let a_has_been_received = listener.lock().received_variant_a;
-    let b_has_been_received = listener.lock().received_variant_b;
+    let a_has_been_received = listener.lock().expect("TODO:").received_variant_a;
+    let b_has_been_received = listener.lock().expect("TODO:").received_variant_b;
     assert!(a_has_been_received);
     assert!(!b_has_been_received);
 
     dispatcher.dispatch_event(&Event::VariantB);
-    let a_has_been_received = listener.lock().received_variant_a;
-    let b_has_been_received = listener.lock().received_variant_b;
+    let a_has_been_received = listener.lock().expect("TODO:").received_variant_a;
+    let b_has_been_received = listener.lock().expect("TODO:").received_variant_b;
     assert!(a_has_been_received);
     assert!(b_has_been_received);
 }
@@ -122,7 +120,7 @@ fn dispatch_to_function() {
 
     let closure = Box::new(move |event: &Event| {
         let listener = weak_listener_ref.upgrade().unwrap();
-        listener.lock().test_method(event);
+        listener.lock().expect("TODO:").test_method(event);
 
         None
     });
@@ -131,7 +129,7 @@ fn dispatch_to_function() {
     dispatcher.add_fn(Event::VariantA, closure);
     dispatcher.dispatch_event(&Event::VariantA);
 
-    let listener = listener.lock();
+    let listener = listener.lock().expect("TODO:");
     assert!(listener.used_method);
 }
 
@@ -162,7 +160,7 @@ fn register_and_request_stop_listening() {
     dispatcher.add_listener(Event::EventType, &listener);
     dispatcher.dispatch_event(&Event::EventType);
     dispatcher.dispatch_event(&Event::EventType);
-    assert_eq!(listener.lock().dispatched_events, 1);
+    assert_eq!(listener.lock().expect("TODO:").dispatched_events, 1);
 }
 
 #[test]
@@ -211,13 +209,13 @@ fn register_one_listener_for_one_event_variant_but_dispatch_two_variants() {
     dispatcher.add_listener(Event::VariantB(0), &listener);
 
     dispatcher.dispatch_event(&Event::VariantA(10));
-    let a_has_been_received = listener.lock().received_variant_a;
-    let b_has_been_received = listener.lock().received_variant_b;
+    let a_has_been_received = listener.lock().expect("TODO:").received_variant_a;
+    let b_has_been_received = listener.lock().expect("TODO:").received_variant_b;
     assert!(a_has_been_received);
     assert!(!b_has_been_received);
 
     dispatcher.dispatch_event(&Event::VariantB(10));
-    let b_has_been_received = listener.lock().received_variant_b;
+    let b_has_been_received = listener.lock().expect("TODO:").received_variant_b;
     assert!(b_has_been_received);
 }
 
@@ -317,7 +315,7 @@ fn stop_listening_on_sync_dispatcher_of_fns() {
     let weak_listener_ref = Arc::downgrade(&Arc::clone(&listener));
     let closure_a = Box::new(move |_event: &Event| {
         let listener = &weak_listener_ref.upgrade().unwrap();
-        listener.lock().use_counter += 1;
+        listener.lock().expect("TODO:").use_counter += 1;
 
         Some(SyncDispatcherRequest::StopListening)
     });
@@ -325,7 +323,7 @@ fn stop_listening_on_sync_dispatcher_of_fns() {
     let weak_listener_ref = Arc::downgrade(&Arc::clone(&listener));
     let closure_b = Box::new(move |_event: &Event| {
         let listener = &weak_listener_ref.upgrade().unwrap();
-        listener.lock().use_counter += 1;
+        listener.lock().expect("TODO:").use_counter += 1;
 
         Some(SyncDispatcherRequest::StopListening)
     });
@@ -357,7 +355,7 @@ fn stop_propagation_on_sync_dispatcher_of_fns() {
     let weak_listener_ref = Arc::downgrade(&Arc::clone(&listener));
     let closure_a = Box::new(move |_event: &Event| {
         let listener = &weak_listener_ref.upgrade().unwrap();
-        listener.lock().use_counter += 1;
+        listener.lock().expect("TODO:").use_counter += 1;
 
         Some(SyncDispatcherRequest::StopPropagation)
     });
@@ -365,7 +363,7 @@ fn stop_propagation_on_sync_dispatcher_of_fns() {
     let weak_listener_ref = Arc::downgrade(&Arc::clone(&listener));
     let closure_b = Box::new(move |_event: &Event| {
         let listener = &weak_listener_ref.upgrade().unwrap();
-        listener.lock().use_counter += 1;
+        listener.lock().expect("TODO:").use_counter += 1;
 
         Some(SyncDispatcherRequest::StopPropagation)
     });
@@ -397,7 +395,7 @@ fn stop_propagation_and_listening_on_sync_dispatcher_of_fns() {
     let weak_listener_ref = Arc::downgrade(&Arc::clone(&listener));
     let closure_a = Box::new(move |_event: &Event| {
         let listener = &weak_listener_ref.upgrade().unwrap();
-        listener.lock().use_counter += 1;
+        listener.lock().expect("TODO:").use_counter += 1;
 
         Some(SyncDispatcherRequest::StopListeningAndPropagation)
     });
@@ -405,7 +403,7 @@ fn stop_propagation_and_listening_on_sync_dispatcher_of_fns() {
     let weak_listener_ref = Arc::downgrade(&Arc::clone(&listener));
     let closure_b = Box::new(move |_event: &Event| {
         let listener = &weak_listener_ref.upgrade().unwrap();
-        listener.lock().use_counter += 1;
+        listener.lock().expect("TODO:").use_counter += 1;
 
         Some(SyncDispatcherRequest::StopListeningAndPropagation)
     });

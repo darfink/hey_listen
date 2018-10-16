@@ -13,12 +13,18 @@ build = "build.rs"
 
 [dependencies]
 rayon = "^1.0"
-parking_lot = "^0.5"
 failure = "^0.1"
 failure_derive = "^0.1"
+
+[dependencies.parking_lot]
+version = "^0.6"
+optional = true
 
 [build-dependencies]
 skeptic = "^0.13"
 
 [dev-dependencies]
 skeptic = "^0.13"
+
+[features]
+default = ["parking_lot"]

@@ -26,11 +26,9 @@
 //!
 //! ```rust
 //! extern crate hey_listen;
-//! extern crate parking_lot;
 //!
 //! use hey_listen::{Listener, EventDispatcher, SyncDispatcherRequest};
-//! use std::sync::Arc;
-//! use parking_lot::Mutex;
+//! use std::sync::{Arc, Mutex};
 //!
 //! #[derive(Clone, Eq, Hash, PartialEq)]
 //! enum Event {
@@ -59,6 +57,7 @@
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
+#[cfg(feature = "default")]
 extern crate parking_lot;
 extern crate rayon;
 
@@ -66,7 +65,10 @@ use std::error::Error;
 use std::sync::{Arc, Weak};
 use std::hash::Hash;
 use std::collections::{BTreeMap, HashMap};
+#[cfg(feature = "default")]
 use parking_lot::Mutex;
+#[cfg(not(feature = "default"))]
+use std::sync::Mutex;
 use rayon::{join, ThreadPool,
             prelude::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator}};
 
@@ -292,8 +294,7 @@ where
     ///
     /// ```rust
     /// extern crate hey_listen;
-    /// extern crate parking_lot;
-    /// use std::sync::Arc;
+    /// use std::sync::{Arc, Mutex};
     ///
     /// use hey_listen::{Listener, EventDispatcher, SyncDispatcherRequest};
     ///
@@ -309,7 +310,7 @@ where
     /// }
     ///
     /// fn main() {
-    ///     let listener = Arc::new(parking_lot::Mutex::new(ListenerStruct {}));
+    ///     let listener = Arc::new(Mutex::new(ListenerStruct {}));
     ///     let mut dispatcher: EventDispatcher<Event> = EventDispatcher::default();
     ///
     ///     dispatcher.add_listener(Event::EventType, &listener);
@@ -380,12 +381,10 @@ where
     ///
     /// ```rust
     /// extern crate hey_listen;
-    /// extern crate parking_lot;
     ///
     /// use hey_listen::EventDispatcher;
     /// use hey_listen::SyncDispatcherRequest;
-    /// use std::sync::Arc;
-    /// use parking_lot::Mutex;
+    /// use std::sync::{Arc, Mutex};
     ///
     /// #[derive(Clone, Eq, Hash, PartialEq)]
     /// enum Event {
@@ -409,7 +408,7 @@ where
     ///
     ///     let closure = Box::new(move |event: &Event| -> Option<SyncDispatcherRequest> {
     ///         if let Some(listener) = weak_listener_ref.upgrade() {
-    ///             listener.lock().test_method(&event);
+    ///             listener.lock().expect("TODO:").test_method(&event);
     ///
     ///             None
     ///         } else {
@@ -458,7 +457,7 @@ where
 
             execute_sync_dispatcher_requests(&mut listener_collection.traits, |weak_listener| {
                 if let Some(listener_arc) = weak_listener.upgrade() {
-                    let mut listener = listener_arc.lock();
+                    let mut listener = listener_arc.lock().expect("TODO:");
                     listener.on_event(event_identifier)
                 } else {
                     found_invalid_weak_ref = true;
@@ -531,8 +530,7 @@ where
     ///
     /// ```rust
     /// extern crate hey_listen;
-    /// extern crate parking_lot;
-    /// use std::sync::Arc;
+    /// use std::sync::{Arc, Mutex};
     ///
     /// use hey_listen::{Listener, PriorityEventDispatcher, SyncDispatcherRequest};
     ///
@@ -548,7 +546,7 @@ where
     /// }
     ///
     /// fn main() {
-    ///     let listener = Arc::new(parking_lot::Mutex::new(ListenerStruct {}));
+    ///     let listener = Arc::new(Mutex::new(ListenerStruct {}));
     ///     let mut dispatcher: PriorityEventDispatcher<u32, Event> = PriorityEventDispatcher::default();
     ///
     ///     dispatcher.add_listener(Event::EventType, &listener, 1);
@@ -635,11 +633,9 @@ where
     ///
     /// ```rust
     /// extern crate hey_listen;
-    /// extern crate parking_lot;
     ///
     /// use hey_listen::{PriorityEventDispatcher, SyncDispatcherRequest};
-    /// use std::sync::Arc;
-    /// use parking_lot::Mutex;
+    /// use std::sync::{Arc, Mutex};
     ///
     /// #[derive(Clone, Eq, Hash, PartialEq)]
     /// enum Event {
@@ -663,7 +659,7 @@ where
     ///
     ///     let closure = Box::new(move |event: &Event| -> Option<SyncDispatcherRequest> {
     ///         if let Some(listener) = weak_listener_ref.upgrade() {
-    ///             listener.lock().test_method(&event);
+    ///             listener.lock().expect("TODO:").test_method(&event);
     ///
     ///             None
     ///         } else {
@@ -724,7 +720,7 @@ where
                     &mut listener_collection.traits,
                     |weak_listener| {
                         if let Some(listener_arc) = weak_listener.upgrade() {
-                            let mut listener = listener_arc.lock();
+                            let mut listener = listener_arc.lock().expect("TODO:");
                             listener.on_event(event_identifier)
                         } else {
                             found_invalid_weak_ref = true;
@@ -801,8 +797,7 @@ where
     ///
     /// ```rust
     /// extern crate hey_listen;
-    /// extern crate parking_lot;
-    /// use std::sync::Arc;
+    /// use std::sync::{Arc, Mutex};
     ///
     /// use hey_listen::ParallelListener;
     /// use hey_listen::ParallelEventDispatcher;
@@ -820,7 +815,7 @@ where
     /// }
     ///
     /// fn main() {
-    ///     let listener = Arc::new(parking_lot::Mutex::new(ListenerStruct {}));
+    ///     let listener = Arc::new(Mutex::new(ListenerStruct {}));
     ///     let mut dispatcher: ParallelEventDispatcher<Event> = ParallelEventDispatcher::default();
     ///
     ///     dispatcher.add_listener(Event::EventType, &listener);
@@ -892,15 +887,13 @@ where
     ///
     /// ```rust
     /// extern crate hey_listen;
-    /// extern crate parking_lot;
     /// extern crate failure;
     /// #[macro_use]
     /// extern crate failure_derive;
     ///
     /// use hey_listen::ParallelEventDispatcher;
     /// use hey_listen::ParallelDispatcherRequest;
-    /// use std::sync::Arc;
-    /// use parking_lot::Mutex;
+    /// use std::sync::{Arc, Mutex};
     ///
     /// #[derive(Clone, Eq, Hash, PartialEq)]
     /// enum Event {
@@ -924,7 +917,7 @@ where
     ///
     ///     let closure = Box::new(move |event: &Event| -> Option<ParallelDispatcherRequest> {
     ///         if let Some(listener) = weak_listener_ref.upgrade() {
-    ///             listener.lock().test_method(&event);
+    ///             listener.lock().expect("TODO:").test_method(&event);
     ///             None
     ///         } else {
     ///             Some(ParallelDispatcherRequest::StopListening)
@@ -1010,11 +1003,11 @@ where
                 );
             }
 
-            fns_to_remove.lock().iter().for_each(|index| {
+            fns_to_remove.lock().expect("TODO:").iter().for_each(|index| {
                 listener_collection.fns.swap_remove(*index);
             });
 
-            traits_to_remove.lock().iter().for_each(|index| {
+            traits_to_remove.lock().expect("TODO:").iter().for_each(|index| {
                 listener_collection.traits.swap_remove(*index);
             });
         }
@@ -1040,17 +1033,17 @@ where
                     .enumerate()
                     .for_each(|(index, listener)| {
                         if let Some(listener_arc) = listener.upgrade() {
-                            let mut listener = listener_arc.lock();
+                            let mut listener = listener_arc.lock().expect("TODO:");
 
                             if let Some(instruction) = listener.on_event(event_identifier) {
                                 match instruction {
                                     ParallelDispatcherRequest::StopListening => {
-                                        traits_to_remove.lock().push(index)
+                                        traits_to_remove.lock().expect("TODO:").push(index)
                                     }
                                 }
                             }
                         } else {
-                            traits_to_remove.lock().push(index)
+                            traits_to_remove.lock().expect("TODO:").push(index)
                         }
                     })
             },
@@ -1063,7 +1056,7 @@ where
                         if let Some(instruction) = callback(event_identifier) {
                             match instruction {
                                 ParallelDispatcherRequest::StopListening => {
-                                    fns_to_remove.lock().push(index);
+                                    fns_to_remove.lock().expect("TODO:").push(index);
                                 }
                             }
                         } else {
